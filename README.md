@@ -1,5 +1,5 @@
-This is part of supporting code for <A Mixed Finite Element Solver for 
-Natural Convection in Porous Media Using Automated Solution Techniques>.
+This is part of supporting code for 'A Mixed Finite Element Solver for 
+Natural Convection in Porous Media Using Automated Solution Techniques'.
 Author: Chao Zhang (chao.zhang@auckland.ac.nz)
 
 In order to produce the data used in the paper, please run
