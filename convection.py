@@ -289,8 +289,8 @@ class Elder(Convection):
                 self.t += self.dt
                 count += 1
 
-class MMS_convection(object):
-    """MMS_convection constructor"""
+class MMS(object):
+    """MMS constructor"""
     def __init__(self, nx, floworder=0, heatorder=1):
         self.nx = nx
         self.floworder = floworder

@@ -12,7 +12,7 @@ In order to produce the data used in the paper, please run
 '''
 
 from dolfin import *
-from convection import MMS_convection
+from convection import MMS
 from Boundary_and_expressions import *
 from math import log as ln
 set_log_level(ERROR)
@@ -28,12 +28,12 @@ for case_i in range(len(flow_degree)):
     output_handle.write(output)
     h = []  # to store element sizes
     E = []  # to store errors
-    nxs = [4, 8, 16]
+    nxs = [4, 8, 16, 32, 64, 128]
     for nx in nxs:
         print "solving case nx = [%d]" % nx
         output_handle.write( "solving case nx = [%d]\n" % nx )
         h.append(1.0/nx)
-        problem = MMS_convection(nx, flow_degree[case_i], heat_degree[case_i])
+        problem = MMS(nx, flow_degree[case_i], heat_degree[case_i])
         problem.solve()
         E.append(problem.calculate_error())
 
