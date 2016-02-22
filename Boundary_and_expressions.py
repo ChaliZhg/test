@@ -61,3 +61,21 @@ class zero_normal_flux_bc_expression(Expression):
             values[1] = g*n[1]
         def value_shape(self):
             return (2,)
+
+class TopBoundary(SubDomain):
+     def inside(self, x, on_boundary):
+        return on_boundary and near(x[1], 1.0)
+
+class EdgeBottom(SubDomain):
+     def inside(self, x, on_boundary):
+        return on_boundary and near(x[1], 0.0) and x[0]>1.0
+
+class CentralBottom(SubDomain):
+     def inside(self, x, on_boundary):
+        return on_boundary and near(x[1], 0.0) and (x[0]<=1.0)
+
+class ut_bc_expression(Expression):
+        def __init__(self, t):
+            self.t = t
+        def eval(self, values, x):
+            values[0] = (1.0 - x[1])*1.0

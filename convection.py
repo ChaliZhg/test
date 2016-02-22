@@ -36,7 +36,6 @@ class Convection(object):
         output_handle = file('%s__diff_ra%d_nx%d.txt' % (self.convection_type, self.Ra, self.nx), 'w')
         output_handle.close()
 
-
     def generate_mesh(self):
         self.mesh = UnitSquareMesh(self.nx, self.nx)
 
@@ -67,8 +66,6 @@ class Convection(object):
             self.w0= Function(self.W, '%s__steady_state_ra%d_nx%d.xml' % (self.convection_type, Ra-step_length, nx))
         self.u, self.p, self.ut = split(self.w)
 
-    # def define_boundary_expressions(self): #not shared
-        # self.ut_bc = Expression()
     def define_boundary_expressions(self):
         if self.convection_type == 'hrl':
             self.ut_bc = hrl_ut_bc_expression(self.t, self.Ra)
@@ -120,7 +117,6 @@ class Convection(object):
         val = as_vector([0.0, self.Ra*ut])
         return val
 
-    # def define_boundary_condition(self):# not shared
     def define_boundary_condition(self):
         bc1 = [DirichletBC(self.W.sub(0), self.zero_normal_flux_bc, AllBoundary())]
         if self.convection_type == 'hfs':
@@ -175,6 +171,7 @@ class Convection(object):
         if l2norm < self.steady_tol:
             is_steady_state = True
         return is_steady_state
+
     def determine_dt(self):
         velo = interpolate(self.w.sub(0), self.VEL)
         max_velocity = np.max(np.abs(velo.vector().array()))
@@ -184,6 +181,7 @@ class Convection(object):
             self.dt = self.dt_cfl
         else:
             self.dt = self.dt_init
+
     def calculate_nusselt(self):
 
         grad_norm = inner(grad(self.ut),grad(self.ut))*dx
@@ -206,3 +204,74 @@ class Convection(object):
         self.create_variational_problem_and_solver()
         self.simulate()
         return self.dt
+
+class Elder(Convection):
+    """docstring for Elder"""
+    def __init__(self, Ra, nx, ny, T, dt, cfl, floworder=0, heatorder=1):
+        self.Ra = Ra
+        self.nx = nx
+        self.ny = ny
+        self.T = T
+        self.dt_init = dt
+        self.t = dt
+        self.dt = dt
+        self.cfl = cfl
+        self.floworder = floworder
+        self.heatorder = heatorder
+        self.steady_tol = 1.0e-5
+
+    def generate_mesh(self):
+        self.mesh = UnitSquareMesh(self.nx, self.ny)
+        self.mesh.coordinates()[:,0] = self.mesh.coordinates()[:,0]*2
+
+    def mark_boundaries(self):
+        self.boundaries = FacetFunction('size_t', self.mesh, 0)
+        self.top = TopBoundary()
+        self.top.mark(self.boundaries, 2)
+        self.centralbottom = CentralBottom()
+        self.centralbottom.mark(self.boundaries, 1)
+        self.edgebottom = EdgeBottom()
+        self.edgebottom.mark(self.boundaries, 3)
+
+    def generate_functions(self):
+        self.w = Function(self.W)
+        self.w0= Function(self.W)
+
+    def define_boundary_expressions(self):
+        self.ut_bc = ut_bc_expression(self.t)
+        self.zero_normal_flux_bc = zero_normal_flux_bc_expression(self.mesh)
+
+    def define_boundary_condition(self):
+        bc1 = [DirichletBC(self.W.sub(0), self.zero_normal_flux_bc, AllBoundary())]
+        bc2 = [DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 1, "geometric"), \
+               DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 2, "geometric"), \
+               DirichletBC(self.W.sub(2), Constant(0.0), self.boundaries, 3, "geometric")]
+        self.bc = bc1 + bc2
+
+    def simulate(self, plot_slu=False):
+            if plot_slu:
+                fig_u = plot(self.w.sub(0), axes=True, title = 'Velocity')
+                fig_p = plot(self.w.sub(1), axes=True, title = 'Pressure')
+                fig_ut = plot(self.w.sub(2), axes=True, title = 'Temperature')
+            self.dt_cfl = self.dt
+            count = 1
+            while self.t < self.T:
+                print '----------------------'
+                print '     Ra = %d' % self.Ra
+                print '     nx = %d' % self.nx
+                print '  count = %d' % count
+                print '      t = %.6E' % self.t
+                print '     dt = %.6E' % self.dt
+                print ' dt_cfl = %.6E' % self.dt_cfl
+                self.ut_bc.t = self.t
+                self.solver.solve()
+                self.w0.vector()[:] = self.w.vector()
+                if plot_slu:
+                    fig_u.plot()
+                    fig_p.plot()
+                    fig_ut.plot()
+                self.determine_dt()
+                if (count%(10) < 0.01):
+                    File('solutions/transient_solution_at'+ '%.6f' %t + '.xml') << w
+                self.t += self.dt
+                count += 1
