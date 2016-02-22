@@ -18,8 +18,7 @@ set_log_level(ERROR)
 
 class Convection(object):
     """Convection constructor"""
-    def __init__(self, convection_type, Ra, nx, ny, T, dt, cfl, floworder=0, heatorder=1):
-        self.convection_type = convection_type
+    def __init__(self, Ra, nx, ny, T, dt, cfl, floworder=0, heatorder=1):
         self.Ra = Ra
         self.nx = nx
         self.ny = ny
@@ -31,9 +30,9 @@ class Convection(object):
         self.floworder = floworder
         self.heatorder = heatorder
         self.steady_tol = 1.0e-5
-        output_handle = file('%s__nusselt_ra%d_nx%d.txt' % (self.convection_type,self.Ra, self.nx), 'w')
+        output_handle = file('nusselt_ra%d_nx%d.txt' % (self.Ra, self.nx), 'w')
         output_handle.close()
-        output_handle = file('%s__diff_ra%d_nx%d.txt' % (self.convection_type, self.Ra, self.nx), 'w')
+        output_handle = file('diff_ra%d_nx%d.txt' % (self.Ra, self.nx), 'w')
         output_handle.close()
 
     def generate_mesh(self):
@@ -62,18 +61,13 @@ class Convection(object):
             self.w = Function(self.W)
             self.w0= Function(self.W)
         else:
-            self.w = Function(self.W, '%s__steady_state_ra%d_nx%d.xml' % (self.convection_type, Ra-step_length, nx))
-            self.w0= Function(self.W, '%s__steady_state_ra%d_nx%d.xml' % (self.convection_type, Ra-step_length, nx))
+            self.w = Function(self.W, 'steady_state_ra%d_nx%d.xml' % (Ra-step_length, nx))
+            self.w0= Function(self.W, 'steady_state_ra%d_nx%d.xml' % (Ra-step_length, nx))
         self.u, self.p, self.ut = split(self.w)
 
     def define_boundary_expressions(self):
-        if self.convection_type == 'hrl':
-            self.ut_bc = hrl_ut_bc_expression(self.t, self.Ra)
-        elif self.convection_type == 'hfs':
-            self.ut_bc = hfs_ut_bc_expression(self.t)
-        else:
-            error('hrl or hfs')
-        self.zero_normal_flux_bc = zero_normal_flux_bc_expression(self.mesh)
+        pass
+
     def define_weakform(self):
         u, p, ut = split(self.w)
         u0, p0, ut0 = split(self.w0)
@@ -118,14 +112,7 @@ class Convection(object):
         return val
 
     def define_boundary_condition(self):
-        bc1 = [DirichletBC(self.W.sub(0), self.zero_normal_flux_bc, AllBoundary())]
-        if self.convection_type == 'hfs':
-            bc2 = [DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 1, "geometric"), \
-                   DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 3, "geometric")]
-        else:
-            bc2 = [DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 2, "geometric"), \
-               DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 4, "geometric")]
-        self.bc = bc1 + bc2
+        pass
 
     def simulate(self, plot_slu=False):
         if plot_slu:
@@ -156,7 +143,7 @@ class Convection(object):
             self.determine_dt()
             self.t += self.dt
             count += 1
-        File('%s_steady_state_ra%d_nx%d.xml' % (self.convection_type, self.Ra, self.nx)) << self.w 
+        File('steady_state_ra%d_nx%d.xml' % (self.Ra, self.nx)) << self.w 
 
     def check_steady_state(self):
         is_steady_state = False
@@ -165,7 +152,7 @@ class Convection(object):
         l2norm = np.linalg.norm((warray - w0array))
         output = 'L2 Norm = %.6E' % l2norm
         print output
-        output_handle = file('%s_diff_ra%d_nx%d.txt' % (self.convection_type, self.Ra, self.nx), 'a')
+        output_handle = file('diff_ra%d_nx%d.txt' % (self.Ra, self.nx), 'a')
         output_handle.write('%.6E,%.6E\n' % (self.t, l2norm))
         output_handle.close()
         if l2norm < self.steady_tol:
@@ -188,7 +175,7 @@ class Convection(object):
         nusselt = assemble(grad_norm)
         output = "Nusselt = %.6E\n" % nusselt
         print output
-        output_handle = file('%s_nusselt_ra%d_nx%d.txt' % (self.convection_type, self.Ra, self.nx), 'a')
+        output_handle = file('nusselt_ra%d_nx%d.txt' % (self.Ra, self.nx), 'a')
         output_handle.write('%.6E,%.6E\n' % (self.t, nusselt))
         output_handle.close()
         return nusselt
@@ -204,6 +191,32 @@ class Convection(object):
         self.create_variational_problem_and_solver()
         self.simulate()
         return self.dt
+
+class HRL(Convection):
+    """docstring for HRL"""
+    def define_boundary_expressions(self):
+        self.ut_bc = hrl_ut_bc_expression(self.t, self.Ra)
+        self.zero_normal_flux_bc = zero_normal_flux_bc_expression(self.mesh)
+
+    def define_boundary_condition(self):
+        bc1 = [DirichletBC(self.W.sub(0), self.zero_normal_flux_bc, AllBoundary())]
+
+        bc2 = [DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 2, "geometric"), \
+               DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 4, "geometric")]
+        self.bc = bc1 + bc2
+
+class HFS(Convection):
+    """docstring for HFS"""
+    def define_boundary_expressions(self):
+        self.ut_bc = hfs_ut_bc_expression(self.t)
+        self.zero_normal_flux_bc = zero_normal_flux_bc_expression(self.mesh)
+
+    def define_boundary_condition(self):
+        bc1 = [DirichletBC(self.W.sub(0), self.zero_normal_flux_bc, AllBoundary())]
+
+        bc2 = [DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 1, "geometric"), \
+               DirichletBC(self.W.sub(2), self.ut_bc, self.boundaries, 3, "geometric")]
+        self.bc = bc1 + bc2
 
 class Elder(Convection):
     """docstring for Elder"""

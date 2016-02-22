@@ -23,7 +23,7 @@ for nx in nxs:
     if nx == 64:
         dt = dt/2
     for Ra in Ras:
-        myProblem = Convection('hrl', Ra, nx, nx, T, dt, cfl)
+        myProblem = HRL(Ra, nx, nx, T, dt, cfl)
         myProblem.generate_mesh()
         myProblem.mark_boundaries()
         myProblem.generate_function_spaces()
