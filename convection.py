@@ -36,7 +36,7 @@ class Convection(object):
         output_handle.close()
 
     def generate_mesh(self):
-        self.mesh = UnitSquareMesh(self.nx, self.nx)
+        self.mesh = UnitSquareMesh(self.nx, self.ny)
 
     def mark_boundaries(self):
         self.boundaries = FacetFunction('size_t', self.mesh, 0)
