@@ -28,6 +28,21 @@ class CentralBottomBoundary(SubDomain):
      def inside(self, x, on_boundary):
         return on_boundary and near(x[1], 0.0) and (x[0]<=1.0)
 
+class mms_p_bc_expression(Expression):
+    def eval(self, values, x):
+        values[0] = sin(x[0]) + cos(x[1])
+
+class mms_ut_bc_expression(Expression):
+    def eval(self, values, x):
+        values[0] = sin(x[0]) + sin(x[1])
+
+class mms_u_bc_expression(Expression):
+    def eval(self, values, x):
+        values[0] = -cos(x[0])
+        values[1] = sin(x[1])
+    def value_shape(self):
+        return (2,)
+
 class hfs_ut_bc_expression(Expression):
         def __init__(self, t):
             self.t = t
@@ -79,3 +94,13 @@ class ut_bc_expression(Expression):
             self.t = t
         def eval(self, values, x):
             values[0] = (1.0 - x[1])*1.0
+
+def calerrornorm(u_e, u, Ve):
+    u_Ve = interpolate(u, Ve)
+    u_e_Ve = interpolate(u_e, Ve)
+    e_Ve = Function(Ve)
+    # Subtract degrees of freedom for the error field
+    e_Ve.vector()[:] = u_e_Ve.vector().array() - \
+                       u_Ve.vector().array()
+    error = e_Ve**2*dx
+    return sqrt(assemble(error))
