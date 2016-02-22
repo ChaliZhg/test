@@ -5,10 +5,10 @@ Author: Chao Zhang (chao.zhang@auckland.ac.nz)
 
 In order to produce the data used in the paper, please run
 
-'mms.py'                for    Figure 1, Figure 2 and Table 1
+'mms.py'    for    Figure 1, Figure 2 and Table 1
 
-'hrl.py'                for    Figure 4, Figure 5 and Table 2
+'hrl.py'    for    Figure 4, Figure 5 and Table 2
 
-'hfs.py                 for    Figure 7, Figure 8 and Table 21
+'hfs.py     for    Figure 7, Figure 8 and Table 21
 
-'elder.py               for    Figure 10
+'elder.py   for    Figure 10
