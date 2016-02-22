@@ -12,7 +12,7 @@ In order to produce the data used in the paper, please run
 '''
 
 from dolfin import *
-from Boundary_and_expressions import *
+from boundaries_and_expressions import *
 import numpy as np
 set_log_level(ERROR)
 
