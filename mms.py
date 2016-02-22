@@ -13,7 +13,7 @@ In order to produce the data used in the paper, please run
 
 from dolfin import *
 from convection import MMS
-from Boundary_and_expressions import *
+from boundaries_and_expressions import *
 from math import log as ln
 set_log_level(ERROR)
 
